@@ -42,7 +42,7 @@ class VoiceAnalyzer{
     const N=buf.length;let rms=0;for(let i=0;i<N;i++)rms+=buf[i]*buf[i];rms=Math.sqrt(rms/N);
     if(rms<0.006)return null; // iOSは感度が低いため閾値を下げる
     const minL=Math.round(this.SR/800),maxL=Math.round(this.SR/50);
-    let r0=0;for(let i=0;i<N;i++)r0+=buf[i]*buf[i];
+    const r0=rms*rms*N; // Fix F: reuse already-computed sum of squares
     let best=-1,bestC=-Infinity;
     for(let lag=minL;lag<=Math.min(maxL,N/2-1);lag++){let c=0;for(let i=0;i<N-lag;i++)c+=buf[i]*buf[i+lag];if(c>bestC){bestC=c;best=lag;}}
     if(best<0||bestC<r0*0.38)return null;
@@ -52,6 +52,9 @@ class VoiceAnalyzer{
   stop(){
     this.recording=false;clearInterval(this._iv);
     if(this.stream)this.stream.getTracks().forEach(t=>t.stop());
+    // Fix D: close AudioContext to free iOS resources (limit: 6 concurrent)
+    if(this.ctx&&this.ctx.state!=='closed'){this.ctx.close().catch(()=>{});}
+    this.ctx=null;this.analyser=null;this.stream=null;
     if(!this.spectralCount)return null;
     const avg=new Float32Array(this.spectralAccum.length);
     for(let i=0;i<avg.length;i++)avg[i]=this.spectralAccum[i]/this.spectralCount;
@@ -471,17 +474,6 @@ function stars(n){const s=Math.round(Math.max(1,Math.min(5,n/20)));return'★'.r
 // ══════════════════════════════════════════════
 //  CONTENT GENERATION
 // ══════════════════════════════════════════════
-function getSubType(m){
-  if(!m)return'standard';
-  const warm=m.warmth>0.26,bright=m.brightness>0.065||m.centroid>1850,clear=m.hnr>68;
-  if(warm&&!bright)return'warm';
-  if(bright&&!warm)return'bright';
-  if(clear)return'clear';
-  return'standard';
-}
-function subTypeLabel(st){
-  return{warm:'温かみ系 — 低域豊富・柔らかな響き',bright:'輝き系 — 高域際立つ・シャープな響き',clear:'澄み系 — 倍音が整った透明な声',standard:'バランス系 — 標準的な音色バランス'}[st]||'バランス系';
-}
 function genExplain(m,sc,vp,st){
   if(!m||!m.medPitch)return'声が検出できませんでした。';
   const f0=Math.round(m.medPitch),stabP=Math.round(m.stability*100),hnrP=Math.round(m.hnr);
@@ -606,31 +598,33 @@ function startTimer(){
   },1000);
 }
 async function startRec(){
-  try{await analyzer.start();}catch(e){const msg=e.message==='microphone_denied'?'マイクへのアクセスが拒否されました。
-
-iPhoneの場合：
-設定アプリ → Safari → マイク → 許可
-
-またはブラウザのアドレスバー左のアイコンからマイクを許可してください。':'マイクの起動に失敗しました。
-'+e.message;alert(msg);return;}
+  try{await analyzer.start();}catch(e){const msg=e.message==='microphone_denied'?'マイクへのアクセスが拒否されました。\n\niPhoneの場合:\n設定アプリ → Safari → マイク → 許可\n\nまたはブラウザのURLバー左のアイコンからマイクを許可してください。':'マイクの起動に失敗しました: '+e.message;alert(msg);return;}
   document.getElementById('rec-dot').classList.add('on');document.getElementById('wave-status').textContent='REC';
   document.getElementById('btn-rec').disabled=true;document.getElementById('btn-submit').disabled=false;document.getElementById('btn-cancel').disabled=false;
   document.getElementById('rec-tip').textContent='読み終わったら「SUBMIT」を押してください。最大30秒で自動停止します。';
   startTimer();drawWave();
 }
+let _stopping=false;
 function doStop(){
+  if(_stopping)return; _stopping=true;
   clearInterval(timerInt);cancelAnimationFrame(rafId);metrics=analyzer.stop();
-  document.getElementById('rec-dot').classList.remove('on');show('s-scan');setTimeout(renderResults,2200);
+  document.getElementById('rec-dot').classList.remove('on');
+  document.getElementById('btn-submit').disabled=true;
+  document.getElementById('btn-cancel').disabled=true;
+  show('s-scan');setTimeout(renderResults,2200);
 }
 function doCancel(){
-  clearInterval(timerInt);cancelAnimationFrame(rafId);analyzer.stop();resetRecUI();
-  document.getElementById('wave-status').textContent='STANDBY';
+  clearInterval(timerInt);cancelAnimationFrame(rafId);
+  analyzer.stop(); // closes AudioContext (Fix D)
+  resetRecUI();    // resets _stopping flag (Fix E)
   document.getElementById('rec-tip').textContent='REC START を押して録音を開始してください';
 }
 function resetRecUI(){
+  _stopping=false; // Fix E: allow doStop to run again on next session
   document.getElementById('timer').textContent='0:00';document.getElementById('progress-fill').style.width='0%';
   document.getElementById('btn-rec').disabled=false;document.getElementById('btn-submit').disabled=true;
   document.getElementById('btn-cancel').disabled=true;document.getElementById('rec-dot').classList.remove('on');
+  document.getElementById('wave-status').textContent='STANDBY';
 }
 function renderResults(){
   show('s-result');

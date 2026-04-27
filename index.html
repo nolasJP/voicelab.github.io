@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOICE LAB — 声質診断システム</title>
+<meta name="description" content="マイクで声を録音するだけ。基本周波数・ピッチ安定性・調波雑音比などを計測し、248名の声データベースからあなたの声に近い声優・歌手・俳優をマッチングします。">
+<meta name="theme-color" content="#100d09">
+<meta property="og:title" content="VOICE LAB — 声質診断システム">
+<meta property="og:description" content="自分の声を録音して、声の特徴と似た声を持つ著名人を発見しよう。">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══ INTRO ══ -->
+<div class="screen active" id="s-intro">
+  <div class="logo-tag">Voice Lab v7.0 — Acoustic Analysis System</div>
+  <div class="main-title">VOICE<span>LAB</span></div>
+  <div class="main-sub">声質診断システム</div>
+  <div class="intro-card">
+    <strong>計測する音響特性</strong>
+    <div class="intro-grid">
+      <div class="ig">基本周波数 (F0)</div><div class="ig">ピッチ安定性</div>
+      <div class="ig">調波雑音比 (HNR)</div><div class="ig">スペクトル重心</div>
+      <div class="ig">低域エネルギー比</div><div class="ig">高域成分比率</div>
+    </div>
+    <br>
+    9段階の声域帯域 × 音色サブタイプで、<strong>248名のデータベース</strong>からあなたの声に近い人をマッチングします。
+  </div>
+  <button class="btn" id="btn-start"><span>START — アンケートへ</span></button>
+  <p style="margin-top:18px;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:2px;text-align:center">マイクへのアクセス許可が必要です</p>
+</div>
+
+<!-- ══ QUIZ ══ -->
+<div class="screen" id="s-quiz">
+  <div class="quiz-head">
+    <div class="quiz-title">PRE-ANALYSIS QUESTIONNAIRE</div>
+    <div class="quiz-sub">任意回答です。答えるほど結果が最適化されます。</div>
+  </div>
+  <div class="quiz-progress"><div class="quiz-bar" id="quiz-bar" style="width:0%"></div></div>
+  <div class="q-block">
+    <div class="q-num">Q1 / 7</div>
+    <div class="q-label">性別を教えてください <span class="q-optional">任意</span></div>
+    <div class="opts" data-q="gender" data-mode="single">
+      <div class="opt" data-v="male">男性</div>
+      <div class="opt" data-v="female">女性</div>
+      <div class="opt" data-v="skip">回答しない</div>
+    </div>
+  </div>
+  <div class="q-block">
+    <div class="q-num">Q2 / 7</div>
+    <div class="q-label">年齢層を教えてください <span class="q-optional">任意</span></div>
+    <div class="opts" data-q="age" data-mode="single">
+      <div class="opt" data-v="teens">10代</div>
+      <div class="opt" data-v="20s">20代</div>
+      <div class="opt" data-v="30s">30代</div>
+      <div class="opt" data-v="40s">40代以上</div>
+      <div class="opt" data-v="skip">回答しない</div>
+    </div>
+  </div>
+  <div class="q-block">
+    <div class="q-num">Q3 / 7</div>
+    <div class="q-label">今回の目的は？ <span class="q-optional">複数選択可</span></div>
+    <div class="opts" data-q="purpose" data-mode="multi">
+      <div class="opt" data-v="know">自分の声の特徴を知りたい</div>
+      <div class="opt" data-v="speak">発声・話し方を改善したい</div>
+      <div class="opt" data-v="sing">歌をうまくなりたい</div>
+      <div class="opt" data-v="biz">ビジネス・プレゼンに活かしたい</div>
+      <div class="opt" data-v="ref">似た声の人を探したい</div>
+    </div>
+  </div>
+  <div class="q-block">
+    <div class="q-num">Q4 / 7</div>
+    <div class="q-label">声について気になっていることは？ <span class="q-optional">複数選択可</span></div>
+    <div class="opts" data-q="concern" data-mode="multi">
+      <div class="opt" data-v="pitch">音程が不安定・ブレる</div>
+      <div class="opt" data-v="weak">声が弱い・通らない</div>
+      <div class="opt" data-v="high">声が高すぎる気がする</div>
+      <div class="opt" data-v="low">声が低すぎる気がする</div>
+      <div class="opt" data-v="tone">声の個性・印象が気になる</div>
+      <div class="opt" data-v="none">特になし</div>
+    </div>
+  </div>
+  <div class="q-block">
+    <div class="q-num">Q5 / 7</div>
+    <div class="q-label">参考にしたい声のジャンルは？ <span class="q-optional">複数選択可</span></div>
+    <div class="opts" data-q="refType" data-mode="multi">
+      <div class="opt" data-v="va">声優</div>
+      <div class="opt" data-v="actor">俳優・タレント</div>
+      <div class="opt" data-v="singer">歌手・アーティスト</div>
+      <div class="opt" data-v="narrator">アナウンサー・ナレーター</div>
+    </div>
+  </div>
+  <div class="q-block">
+    <div class="q-num">Q6 / 7</div>
+    <div class="q-label">主に声を使う場面は？ <span class="q-optional">複数選択可</span></div>
+    <div class="opts" data-q="context" data-mode="multi">
+      <div class="opt" data-v="karaoke">カラオケ・歌</div>
+      <div class="opt" data-v="work">仕事・プレゼン・会議</div>
+      <div class="opt" data-v="streaming">動画・配信・ポッドキャスト</div>
+      <div class="opt" data-v="daily">日常会話</div>
+    </div>
+  </div>
+  <div class="q-block">
+    <div class="q-num">Q7 / 7</div>
+    <div class="q-label">目指したい声の方向性は？ <span class="q-optional">ひとつ選択</span></div>
+    <div class="opts" data-q="aspire" data-mode="single">
+      <div class="opt" data-v="deeper">もっと低く深みのある声</div>
+      <div class="opt" data-v="powerful">もっと通る・力強い声</div>
+      <div class="opt" data-v="clear">もっとクリアで澄んだ声</div>
+      <div class="opt" data-v="soft">もっと柔らかく親しみやすい声</div>
+      <div class="opt" data-v="polish">今の声をそのまま磨きたい</div>
+    </div>
+  </div>
+  <div class="quiz-actions">
+    <button class="btn" id="btn-to-record"><span>録音へ進む →</span></button>
+    <button class="btn-ghost" id="btn-skip-quiz">スキップして録音へ</button>
+  </div>
+</div>
+
+<!-- ══ RECORD ══ -->
+<div class="screen" id="s-record">
+  <div class="rec-header">
+    <div class="rec-label">RECORDING — MAX 30 SEC</div>
+    <div class="rec-hint">以下のテキストを自然な声で読み、終わったら「SUBMIT」を押してください</div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-label">VOICE SAMPLE PROMPT</div>
+    <div class="prompt-text">
+      「この街の朝は、いつも静かで穏やかだ。<br>
+      風の音を聞きながら、ゆっくりと歩いていく。<br>
+      空が少しずつ明るくなる時間が、好きだ。<br>
+      今日も一日が、静かに始まろうとしている。<br>
+      遠くで鳥の声がして、少し立ち止まった。<br>
+      深呼吸をひとつして、また歩き出す。」
+    </div>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="wave-canvas"></canvas>
+    <div class="wave-badge">
+      <div class="rec-dot" id="rec-dot"></div>
+      <span id="wave-status">STANDBY</span>
+    </div>
+  </div>
+  <div class="time-row">
+    <div class="timer" id="timer">0:00</div>
+    <div class="progress-wrap"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="timer-max">MAX 30s</div>
+  </div>
+  <div class="rec-controls">
+    <button class="btn" id="btn-rec"><span>● REC START</span></button>
+    <button class="btn-stop" id="btn-submit" disabled>■ SUBMIT</button>
+    <button class="btn-cancel" id="btn-cancel" disabled>× CANCEL</button>
+  </div>
+  <div class="rec-tip" id="rec-tip">REC START を押して録音を開始してください</div>
+</div>
+
+<!-- ══ SCAN ══ -->
+<div class="screen" id="s-scan">
+  <div class="scan-ring"></div>
+  <div class="scan-msg">ANALYZING VOICE DATA...</div>
+</div>
+
+<!-- ══ RESULTS ══ -->
+<div class="screen" id="s-result">
+  <div class="res-header">■ ANALYSIS COMPLETE ■</div>
+  <div id="err-box" class="err-box" style="display:none"></div>
+
+  <div class="score-duo">
+    <div class="score-card" style="--ca:var(--sage)">
+      <div class="sc-label">男性的ないい声スコア</div>
+      <div class="sc-num" id="score-m">--</div>
+      <div class="sc-unit">/ 100</div>
+      <div class="sc-bar"><div class="sc-fill" id="bar-m"></div></div>
+    </div>
+    <div class="score-card" style="--ca:var(--rose)">
+      <div class="sc-label">女性的ないい声スコア</div>
+      <div class="sc-num" id="score-f">--</div>
+      <div class="sc-unit">/ 100</div>
+      <div class="sc-bar"><div class="sc-fill" id="bar-f" style="background:var(--rose)"></div></div>
+    </div>
+  </div>
+
+  <div class="pitch-ruler">
+    <div class="sec-head">声域ポジション</div>
+    <div class="ruler-track">
+      <div class="ruler-range" id="ruler-range"></div>
+      <div class="ruler-mark mk-min" id="mark-min" style="left:15%"></div>
+      <div class="ruler-mark mk-avg" id="mark-avg" style="left:50%"></div>
+      <div class="ruler-mark mk-max" id="mark-max" style="left:85%"></div>
+    </div>
+    <div class="ruler-mlabels">
+      <div class="ruler-ml ml-min" id="ml-min" style="left:15%">—<br>最低</div>
+      <div class="ruler-ml ml-avg" id="ml-avg" style="left:50%">—<br>平均</div>
+      <div class="ruler-ml ml-max" id="ml-max" style="left:85%">—<br>最高</div>
+    </div>
+    <div class="ruler-labels">
+      <span>BASS<br>60Hz</span>
+      <span>BARITONE<br>120Hz</span>
+      <span>TENOR<br>185Hz</span>
+      <span>MEZZO<br>250Hz</span>
+      <span>SOPRANO<br>380Hz+</span>
+    </div>
+  </div>
+
+  <div class="sec"><div class="sec-head">スコアの根拠</div><div class="explain-box" id="explain-box"></div></div>
+  <div class="sec"><div class="sec-head">自信を持てるポイント</div><div id="str-list"></div></div>
+  <div class="sec"><div class="sec-head">伸びしろ — より良くなるために</div><div id="imp-list"></div></div>
+  <div class="sec"><div class="sec-head">あなたの声タイプ・参考になる声</div><div id="ref-box"></div></div>
+
+  <div class="sec">
+    <div class="sec-head">DETAILED METRICS</div>
+    <div class="m-row"><span class="m-key">基本周波数 (F0)</span><span class="m-val hi" id="m-f0">--</span></div>
+    <div class="m-row"><span class="m-key">声域分類</span><span class="m-val" id="m-range">--</span></div>
+    <div class="m-row"><span class="m-key">音色サブタイプ</span><span class="m-val" id="m-sub">--</span></div>
+    <div class="m-row">
+      <span class="m-key">ピッチ安定性</span>
+      <div class="mini-bar-wrap"><div class="mini-bar"><div class="mini-bar-fill" id="bar-stab"></div></div><span class="m-val" id="m-stab">--</span></div>
+    </div>
+    <div class="m-row">
+      <span class="m-key">調波雑音比 (HNR)</span>
+      <div class="mini-bar-wrap"><div class="mini-bar"><div class="mini-bar-fill" id="bar-hnr"></div></div><span class="m-val" id="m-hnr">--</span></div>
+    </div>
+    <div class="m-row">
+      <span class="m-key">声の温かみ（低域比）</span>
+      <div class="mini-bar-wrap"><div class="mini-bar"><div class="mini-bar-fill" id="bar-warm"></div></div><span class="m-val" id="m-warm">--</span></div>
+    </div>
+    <div class="m-row"><span class="m-key">スペクトル重心</span><span class="m-val" id="m-cent">--</span></div>
+    <div class="m-row"><span class="m-key">録音サンプル数</span><span class="m-val" id="m-n">--</span></div>
+  </div>
+
+  <div class="caveat">
+    ※ WebAudio APIによる近似計測です。専門ツール（Praat等）の数値とは異なる場合があります。<br>
+    「いい声」の感覚的評価には個人差・文化差があります。本結果は音響的傾向の参考情報です。
+  </div>
+  <div style="margin-top:22px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <button class="btn-ghost" id="btn-retry">↺ もう一度録音</button>
+    <button class="btn-ghost" id="btn-requiz">アンケートから</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

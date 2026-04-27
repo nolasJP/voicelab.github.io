@@ -1,14 +1,33 @@
 // ══════════════════════════════════════════════
-//  VOICE ANALYZER
+//  VOICE ANALYZER  (iOS Safari対応版)
 // ══════════════════════════════════════════════
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+
 class VoiceAnalyzer{
   constructor(){this.ctx=null;this.analyser=null;this.stream=null;this.recording=false;this.pitchSamples=[];this.spectralAccum=null;this.spectralCount=0;this.FFT=2048;this.SR=44100;this._iv=null}
+
   async start(){
-    this.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-    this.ctx=new(window.AudioContext||window.webkitAudioContext)();this.SR=this.ctx.sampleRate;
+    // Step1: マイク取得 — iOSは厳密制約を拒否するのでフォールバック付き
+    try{
+      this.stream=await navigator.mediaDevices.getUserMedia(
+        {audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    }catch(e){
+      try{this.stream=await navigator.mediaDevices.getUserMedia({audio:true});}
+      catch(e2){throw new Error('microphone_denied');}
+    }
+    // Step2: AudioContext (webkitAudioContext iOS対応)
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    this.ctx=new AudioCtx();
+    this.SR=this.ctx.sampleRate;
+    // Step3: iOS必須 — suspended状態をresumeする
+    if(this.ctx.state==='suspended') await this.ctx.resume();
+    // Step4: 解析グラフ接続
     const src=this.ctx.createMediaStreamSource(this.stream);
-    this.analyser=this.ctx.createAnalyser();this.analyser.fftSize=this.FFT;this.analyser.smoothingTimeConstant=0.15;
-    src.connect(this.analyser);this.recording=true;this.pitchSamples=[];
+    this.analyser=this.ctx.createAnalyser();
+    this.analyser.fftSize=this.FFT;
+    this.analyser.smoothingTimeConstant=0.15;
+    src.connect(this.analyser);
+    this.recording=true;this.pitchSamples=[];
     this.spectralAccum=new Float32Array(this.FFT/2);this.spectralCount=0;
     this._iv=setInterval(()=>this._tick(),80);
   }
@@ -21,7 +40,7 @@ class VoiceAnalyzer{
   }
   _pitch(buf){
     const N=buf.length;let rms=0;for(let i=0;i<N;i++)rms+=buf[i]*buf[i];rms=Math.sqrt(rms/N);
-    if(rms<0.012)return null;
+    if(rms<0.006)return null; // iOSは感度が低いため閾値を下げる
     const minL=Math.round(this.SR/800),maxL=Math.round(this.SR/50);
     let r0=0;for(let i=0;i<N;i++)r0+=buf[i]*buf[i];
     let best=-1,bestC=-Infinity;
@@ -587,7 +606,13 @@ function startTimer(){
   },1000);
 }
 async function startRec(){
-  try{await analyzer.start();}catch(e){alert('マイクへのアクセスが拒否されました。\nブラウザ設定でマイクを許可してください。');return;}
+  try{await analyzer.start();}catch(e){const msg=e.message==='microphone_denied'?'マイクへのアクセスが拒否されました。
+
+iPhoneの場合：
+設定アプリ → Safari → マイク → 許可
+
+またはブラウザのアドレスバー左のアイコンからマイクを許可してください。':'マイクの起動に失敗しました。
+'+e.message;alert(msg);return;}
   document.getElementById('rec-dot').classList.add('on');document.getElementById('wave-status').textContent='REC';
   document.getElementById('btn-rec').disabled=true;document.getElementById('btn-submit').disabled=false;document.getElementById('btn-cancel').disabled=false;
   document.getElementById('rec-tip').textContent='読み終わったら「SUBMIT」を押してください。最大30秒で自動停止します。';

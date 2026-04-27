@@ -242,3 +242,16 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 .err-box{background:rgba(217,142,114,.1);border:1px solid rgba(217,142,114,.38);border-radius:4px;padding:16px 20px;font-size:13px;color:var(--rose);text-align:center;width:100%;margin-bottom:16px}
 
 @media(max-width:520px){.score-duo{grid-template-columns:1fr}.sc-num{font-size:42px}.intro-grid{grid-template-columns:1fr}.opts{gap:6px}}
+
+/* ── iOS Safari 対応 ── */
+* { -webkit-tap-highlight-color: transparent; }
+body { -webkit-text-size-adjust: 100%; }
+.btn, .btn-ghost, .btn-stop, .btn-cancel, .opt {
+  -webkit-appearance: none;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+/* iOSでcanvasが正しく描画されるように */
+canvas { -webkit-transform: translateZ(0); transform: translateZ(0); }
+/* iOSでスクロールを滑らかに */
+.screen { -webkit-overflow-scrolling: touch; }

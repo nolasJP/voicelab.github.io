@@ -578,10 +578,18 @@ const analyzer=new VoiceAnalyzer();
 const MAX_SEC=30;
 let timerInt=null,secs=0,rafId=null,metrics=null;
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
-const canvas=document.getElementById('wave-canvas');
-const wCtx=canvas.getContext('2d');
+// canvas は描画開始時に遅延初期化（モジュールスコープでのDOM取得クラッシュを防ぐ）
+let canvas=null,wCtx=null;
+function initCanvas(){
+  if(canvas)return true;
+  canvas=document.getElementById('wave-canvas');
+  if(!canvas)return false;
+  wCtx=canvas.getContext('2d');
+  return!!wCtx;
+}
 function drawWave(){
-  const W=canvas.clientWidth,H=canvas.clientHeight;
+  if(!initCanvas())return;
+  const W=canvas.clientWidth||300,H=canvas.clientHeight||96;
   if(canvas.width!==W)canvas.width=W;if(canvas.height!==H)canvas.height=H;
   wCtx.clearRect(0,0,W,H);wCtx.fillStyle='#2e2820';wCtx.fillRect(0,0,W,H);
   wCtx.strokeStyle='rgba(201,168,112,0.1)';wCtx.lineWidth=1;wCtx.beginPath();wCtx.moveTo(0,H/2);wCtx.lineTo(W,H/2);wCtx.stroke();
@@ -669,12 +677,14 @@ function renderResults(){
   document.getElementById('m-cent').textContent=`${Math.round(metrics.centroid)} Hz`;
   document.getElementById('m-n').textContent=`${metrics.n} フレーム`;
 }
-document.getElementById('btn-start').addEventListener('click',()=>show('s-quiz'));
-document.getElementById('btn-to-record').addEventListener('click',()=>{applyAnswers();show('s-record');});
-document.getElementById('btn-skip-quiz').addEventListener('click',()=>show('s-record'));
-document.getElementById('btn-rec').addEventListener('click',startRec);
-document.getElementById('btn-submit').addEventListener('click',doStop);
-document.getElementById('btn-cancel').addEventListener('click',doCancel);
-document.getElementById('btn-retry').addEventListener('click',()=>{resetRecUI();show('s-record');});
-document.getElementById('btn-requiz').addEventListener('click',()=>{resetRecUI();show('s-quiz');});
-initQuiz();
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('btn-start').addEventListener('click',()=>show('s-quiz'));
+  document.getElementById('btn-to-record').addEventListener('click',()=>{applyAnswers();show('s-record');});
+  document.getElementById('btn-skip-quiz').addEventListener('click',()=>show('s-record'));
+  document.getElementById('btn-rec').addEventListener('click',startRec);
+  document.getElementById('btn-submit').addEventListener('click',doStop);
+  document.getElementById('btn-cancel').addEventListener('click',doCancel);
+  document.getElementById('btn-retry').addEventListener('click',()=>{resetRecUI();show('s-record');});
+  document.getElementById('btn-requiz').addEventListener('click',()=>{resetRecUI();show('s-quiz');});
+  initQuiz();
+});
